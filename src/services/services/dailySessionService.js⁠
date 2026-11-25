@@ -1,0 +1,75 @@
+// src/services/dailySessionService.js (ou no mesmo diretório do voiceEngine.js)
+
+export const DAILY_SESSION_DURATION_MINUTES = 20;
+
+export const DEFAULT_SESSION_BLOCKS = [
+  {
+    id: 'warmup',
+    title: 'Clinical Warm-Up',
+    durationMinutes: 4,
+    objective: 'Review key medical terms and pronunciation in English.',
+  },
+  {
+    id: 'roleplay',
+    title: 'Active Voice Patient Case',
+    durationMinutes: 12,
+    objective: 'Conduct a spoken clinical interview or explanation with AI.',
+  },
+  {
+    id: 'feedback',
+    title: 'Pronunciation & Phrasing Feedback',
+    durationMinutes: 4,
+    objective: 'Review corrections, natural medical phrasing, and takeaways.',
+  },
+];
+
+export function createDailySession(specialty = 'General Medicine', blocks = DEFAULT_SESSION_BLOCKS) {
+  const totalMinutes = blocks.reduce((acc, block) => acc + (block.durationMinutes || 0), 0);
+
+  return {
+    sessionId: `medspeak-${Date.now()}`,
+    specialty,
+    targetMinutes: totalMinutes || DAILY_SESSION_DURATION_MINUTES,
+    elapsedSeconds: 0,
+    currentBlockIndex: 0,
+    status: 'ready', // 'ready' | 'in_progress' | 'paused' | 'completed'
+    blocks,
+    transcript: [],
+    createdAt: new Date().toISOString(),
+  };
+}
+
+export function advanceSessionBlock(session) {
+  if (!session || session.status === 'completed') return session;
+
+  const nextIndex = session.currentBlockIndex + 1;
+  if (nextIndex >= session.blocks.length) {
+    return {
+      ...session,
+      currentBlockIndex: session.blocks.length - 1,
+      status: 'completed',
+    };
+  }
+
+  return {
+    ...session,
+    currentBlockIndex: nextIndex,
+    status: 'in_progress',
+  };
+}
+
+export function appendTranscriptEntry(session, entry) {
+  if (!session || !entry) return session;
+
+  return {
+    ...session,
+    transcript: [
+      ...session.transcript,
+      {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        timestamp: new Date().toISOString(),
+        ...entry, // ex.: { speaker: 'doctor' | 'patient_ai' | 'coach', text: '...' }
+      },
+    ],
+  };
+}
